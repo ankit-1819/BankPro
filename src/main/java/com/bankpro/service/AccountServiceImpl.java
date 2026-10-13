@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.bankpro.dto.request.AccountRequestDTO;
@@ -11,6 +13,7 @@ import com.bankpro.dto.response.AccountResponseDTO;
 import com.bankpro.entity.Account;
 import com.bankpro.entity.Customer;
 import com.bankpro.enums.AccountStatus;
+import com.bankpro.enums.AccountType;
 import com.bankpro.exception.AccountNotFoundException;
 import com.bankpro.exception.CustomerNotFoundException;
 import com.bankpro.mapper.AccountMapper;
@@ -78,6 +81,14 @@ public class AccountServiceImpl implements AccountService {
 		}
 		
 		return accountsDtoList;
+	}
+
+	@Override
+	public Page<AccountResponseDTO> getAccountsByType(AccountType accountType, Pageable pageable) {
+		
+		Page<Account> accounts = accountRepository.findByAccountType(accountType,pageable);
+		
+		return accounts.map(account -> accountMapper.toDto(account));
 	}
 
 	

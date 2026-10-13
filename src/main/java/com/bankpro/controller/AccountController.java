@@ -1,23 +1,34 @@
 package com.bankpro.controller;
 
 import java.util.List;
+import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.bankpro.dto.request.AccountRequestDTO;
 import com.bankpro.dto.response.AccountResponseDTO;
 import com.bankpro.dto.response.ApiResponse;
+import com.bankpro.enums.AccountType;
 import com.bankpro.service.AccountService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
+@Validated
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountController {
@@ -58,5 +69,31 @@ public class AccountController {
 		
 		return ResponseEntity.ok(response);
 	}
-
+	
+	@GetMapping("/type/{accountType}")
+	public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> getAccountsByType(@PathVariable AccountType accountType, @RequestParam(defaultValue = "0") @Min(0) int page, @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size, @RequestParam(defaultValue = "id") String sortBy, @RequestParam(defaultValue = "asc") String direction){
+		
+		if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+			
+			throw new IllegalArgumentException("Invalid sort field: "+sortBy);
+		}
+		
+		if (direction == null || !(direction.equalsIgnoreCase("asc") || direction.equalsIgnoreCase("desc"))) {
+			
+			throw new IllegalArgumentException("Invalid sort direction: "+direction);
+		}
+		
+		Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+		
+		Pageable pageable = PageRequest.of(page, size, sort);
+		
+		Page<AccountResponseDTO> accounts = accountService.getAccountsByType(accountType, pageable);
+		
+		ApiResponse<Page<AccountResponseDTO>> response = new ApiResponse<>(true, "Accounts with same type fetched successfully", accounts);
+		
+		return ResponseEntity.ok(response);
+	}
+	
+	private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("id", "accountNumber", "balance", "createdAt", "updatedAt");
+	
 }

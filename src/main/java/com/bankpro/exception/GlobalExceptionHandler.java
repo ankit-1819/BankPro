@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.bankpro.dto.response.ErrorResponse;
 
+import jakarta.validation.ConstraintViolationException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -44,5 +46,31 @@ public class GlobalExceptionHandler {
 		ErrorResponse response = new ErrorResponse(false, ex.getMessage(), 404);
 		
 		return new ResponseEntity<>(response,HttpStatus.NOT_FOUND);
+	}
+	
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalArgumentException (IllegalArgumentException ex){
+		
+		ErrorResponse response = new ErrorResponse(false, ex.getMessage(), 400);
+		
+		return ResponseEntity.badRequest().body(response);
+	}
+	
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ErrorResponse> handleConstraintViolationException (ConstraintViolationException ex){
+		
+		String message = ex.getConstraintViolations()
+		        .stream()
+		        .map(violation -> {
+		            String path = violation.getPropertyPath().toString();
+		            String parameter = path.substring(path.lastIndexOf('.') + 1);
+		            return parameter + ": " + violation.getMessage();
+		        })
+		        .findFirst()
+		        .orElse("Invalid request parameter");
+		
+		ErrorResponse response = new ErrorResponse(false, message, 400);
+		
+		return ResponseEntity.badRequest().body(response);
 	}
 }
